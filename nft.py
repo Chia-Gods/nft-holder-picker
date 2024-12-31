@@ -1,5 +1,4 @@
-import asyncio
-import json
+import os
 import sys
 from typing import List, Optional, Dict
 
@@ -9,8 +8,6 @@ from chia.types.blockchain_format.sized_bytes import bytes32
 from chia.types.coin_record import CoinRecord
 from chia_rs import Coin
 from chia.util.condition_tools import conditions_dict_for_solution
-from chia.util.config import load_config
-from chia.util.default_root import DEFAULT_ROOT_PATH
 from chia.types.blockchain_format.program import Program
 from chia.types.condition_opcodes import ConditionOpcode
 from chia.wallet.nft_wallet.nft_puzzles import get_metadata_and_phs
@@ -18,18 +15,11 @@ from chia.wallet.nft_wallet.uncurry_nft import UncurriedNFT
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash
 
 
-async def get_nft_info(nft_id: str, target_height: int) -> Dict:
+async def get_nft_info(client: FullNodeRpcClient, nft_id: str, target_height: int) -> Dict:
     nft_info = {
         "nft_id": "",
         "current_address": "",
     }
-
-    config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
-    try:
-        client = await FullNodeRpcClient.create(config["self_hostname"], config["full_node"]["rpc_port"],
-                                                DEFAULT_ROOT_PATH, config)
-    except Exception as e:
-        raise Exception(f"Failed to create RPC client: {e}")
 
     launcher_coin = decode_puzzle_hash(nft_id)
     current_coin = await get_last_child(client, launcher_coin, target_height)
@@ -52,17 +42,19 @@ async def get_nft_info(nft_id: str, target_height: int) -> Dict:
     current_address = encode_puzzle_hash(puzzlehash, "xch")
     nft_info["current_address"] = current_address
 
-    client.close()
     return nft_info
 
 
 # Gets the last child coin
 async def get_last_child(client: FullNodeRpcClient, coin_id: bytes32, target_height: int) -> Optional[CoinRecord]:
     current_coin = await client.get_coin_record_by_name(coin_id)
+    if current_coin is None:
+        print(f"The fuck man: {coin_id}")
+        sys.exit(1)
 
     while True:
         if current_coin is None:
-            return current_coin
+            raise ValueError(f"Could not find coin {coin_id.hex()}")
 
         if current_coin.spent_block_index == 0:
             return current_coin

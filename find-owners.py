@@ -1,10 +1,12 @@
 import asyncio
 import json
 import re
+import sys
 
 import requests
 import time
-from typing import List, Dict, Optional
+from typing import Optional
+from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.config import load_config
 from chia.util.default_root import DEFAULT_ROOT_PATH
 from nft import get_nft_info
@@ -14,10 +16,11 @@ MINTGARDEN_API = "https://api.mintgarden.io"
 RATE_LIMIT_DELAY = 1  # seconds between API calls
 TOTAL_PROCESSED = 0
 
-async def get_and_process_collection_nfts(collection_id: str, target_height: Optional[int] = None):
+async def get_and_process_collection_nfts(client: FullNodeRpcClient, collection_id: str, target_height: Optional[int] = None):
     """
     Fetch and process NFTs from a collection using MintGarden API
     Args:
+        client: FullNodeRpcClient
         collection_id: The collection ID from MintGarden
         target_height: Optional target block height
     """
@@ -58,7 +61,7 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
 
                 print(f"\nProcessing NFT {TOTAL_PROCESSED}: {nft_id}")
                 try:
-                    nft_info = await get_nft_info(nft_id, target_height)
+                    nft_info = await get_nft_info(client, nft_id, target_height)
                     print(nft_info)
                     if isinstance(nft_info, str):
                         nft_info = json.loads(nft_info)
@@ -117,12 +120,17 @@ async def main():
             print("Error: Chia configuration not found. Is Chia installed and initialized?")
             return
 
-        collection_id = input("Enter the collection ID: ")
-        target_height = input("Enter the target block height (or press Enter to skip): ")
-        target_height = int(target_height) if target_height.strip() else None
+        try:
+            client = await FullNodeRpcClient.create(config["self_hostname"], config["full_node"]["rpc_port"],
+                                                DEFAULT_ROOT_PATH, config)
+        except Exception as e:
+            raise Exception(f"Failed to create RPC client: {e}")
 
-        print("\nFetching NFTs from collection...")
-        results = await get_and_process_collection_nfts(collection_id, target_height)
+        collection_id = sys.argv[1]
+        target_height = int(sys.argv[2])
+
+        print(f"\nFetching NFTs from collection {collection_id} before height {target_height}...")
+        results = await get_and_process_collection_nfts(client, collection_id, target_height)
         results.sort(key=lambda x: int(re.search(r'\d+', x["name"]).group()), reverse=False)
 
         # Save results to file
@@ -130,6 +138,12 @@ async def main():
         with open(output_file, "w") as f:
             json.dump(results, f, indent=2)
         print(f"\nResults saved to {output_file}")
+
+        # Get the header hash of the cutoff block
+        final_block = await client.get_block_record_by_height(target_height)
+        print(final_block.header_hash.hex())
+
+        client.close()
 
     except Exception as e:
         print(f"An error occurred: {str(e)}")
