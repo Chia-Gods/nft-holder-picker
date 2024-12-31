@@ -29,6 +29,13 @@ def get_collection_nfts(collection_id: str) -> List[str]:
     try:
         while True:
             response = requests.get(endpoint, params=params)
+            
+            # Handle rate limiting
+            if response.status_code == 429:
+                print("Rate limited. Waiting 60 seconds...")
+                time.sleep(10)
+                continue
+                
             response.raise_for_status()
             data = response.json()
             
@@ -42,6 +49,9 @@ def get_collection_nfts(collection_id: str) -> List[str]:
                 
             # Update params for next page
             params["cursor"] = next_cursor
+            
+            # Add delay between requests to avoid rate limiting
+            time.sleep(1)  # 1 second delay between requests
             
         return all_nfts
     except requests.exceptions.RequestException as e:
