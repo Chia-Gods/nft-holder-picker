@@ -19,7 +19,7 @@ from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash
 
 
 # nft.py <nft_id>
-async def get_nft_info():
+async def get_nft_info(nft_id: str):
     nft_info = {
         "nft_id": "",
         "current_address": "",
@@ -32,7 +32,6 @@ async def get_nft_info():
     except Exception as e:
         raise Exception(f"Failed to create RPC client: {e}")
 
-    nft_id = sys.argv[1]
     launcher_coin = decode_puzzle_hash(nft_id)
     current_coin = await get_last_child(client, launcher_coin)
     coin_bytes = current_coin.name
