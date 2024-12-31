@@ -16,7 +16,7 @@ This tool:
 1. Connects to the MintGarden API to fetch NFT collection data
 2. Verifies current ownership through your local Chia node
 3. Tracks unique holders while excluding specified addresses (from `excluded_list.py`)
-4. Processes up to 250 NFTs from a collection
+4. Processes up to 250 NFTs from a collection (Based on the collection size for Chia Gods)
 5. Saves the results to a JSON file for further processing
 
 ## How to Use
@@ -26,22 +26,23 @@ This tool:
    git clone https://github.com/Chia-Gods/nft-holder-picker.git
    cd nft-holder-picker
    ```
-
-2. Install dependencies:
-   ```bash
+   
+2. Create a local venv and install requirements:
+   ```
+   python3 -m venv venv
+   . ./venv/bin/activate
    pip install -r requirements.txt
    ```
 
-3. Run the script with your collection ID and target height:
+4.Run the script with your collection ID and target height:
    ```bash
    python3 find-owners.py <collection_id> <target_height>
    ```
 
 ## Example
 
-For a collection like "Chia Friends":
 ```bash
-python3 find-owners.py col1z0ef7w5n4vq9qkue67y8jnwumd9799sm50t8fyle73c70ly4z0ws0p2rhl 6427100
+python3 find-owners.py col1zpqtfv9yynf0q95sg27n44r25vphg6n8rlzn6v3j6r8mm52zjvlq8hcqru 6427100
 ```
 
 The script will output progress:
