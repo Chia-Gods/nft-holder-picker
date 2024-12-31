@@ -49,11 +49,12 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
                 print(f"\nProcessing NFT {total_processed}: {nft_id}")
                 try:
                     nft_info = await get_nft_info(nft_id)
-                    if nft_info.get("error"):
-                        print(f"Error processing NFT: {nft_info['error']}")
-                    elif nft_info.get("current_address"):
+                    if nft_info and nft_info.get("current_address"):
                         print(f"Current owner: {nft_info['current_address']}")
-                    results.append(nft_info)
+                        results.append(nft_info)
+                    else:
+                        print(f"No owner information found for NFT")
+                        results.append({"nft_id": nft_id, "error": "No owner information found"})
                 except Exception as e:
                     print(f"Failed to process NFT: {str(e)}")
                     results.append({"nft_id": nft_id, "error": str(e)})
