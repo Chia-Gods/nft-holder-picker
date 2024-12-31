@@ -6,6 +6,7 @@ from typing import List, Dict, Optional
 from chia.util.config import load_config
 from chia.util.default_root import DEFAULT_ROOT_PATH
 from nft import get_nft_info
+from excluded_list import EXCLUDED_ADDRESSES
 
 MINTGARDEN_API = "https://api.mintgarden.io"
 RATE_LIMIT_DELAY = 1  # seconds between API calls
@@ -20,13 +21,6 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
     endpoint = f"{MINTGARDEN_API}/collections/{collection_id}/nfts"
     params = {
         "size": 100  # Maximum allowed size
-    }
-    
-    # Addresses to exclude
-    EXCLUDED_ADDRESSES = {
-        "xch1n7celqxgn25f9rngfk0g67n299je52qr6pmtk26yeq2ehnm8ftkq9hmldp",
-        "xch1xpc5gse38dfkfv07kkxhtcjsuqcj08l4t2ajfpemrk83sssfd2tsrjj9yw",
-        "xch104v5ukxzd2s62e5pystdgjju8v4vq8g464ggyphemh2zeyysg0rqrrlev3"
     }
     
     results = []
