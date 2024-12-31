@@ -3,9 +3,9 @@ import json
 import requests
 import time
 from typing import List, Dict, Optional
-from nft import get_nft_info
 from chia.util.config import load_config
 from chia.util.default_root import DEFAULT_ROOT_PATH
+from nft import get_nft_info
 
 MINTGARDEN_API = "https://api.mintgarden.io"
 RATE_LIMIT_DELAY = 1  # seconds between API calls
@@ -20,6 +20,13 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
     endpoint = f"{MINTGARDEN_API}/collections/{collection_id}/nfts"
     params = {
         "size": 100  # Maximum allowed size
+    }
+    
+    # Addresses to exclude
+    EXCLUDED_ADDRESSES = {
+        "xch1n7celqxgn25f9rngfk0g67n299je52qr6pmtk26yeq2ehnm8ftkq9hmldp",
+        "xch1xpc5gse38dfkfv07kkxhtcjsuqcj08l4t2ajfpemrk83sssfd2tsrjj9yw",
+        "xch104v5ukxzd2s62e5pystdgjju8v4vq8g464ggyphemh2zeyysg0rqrrlev3"
     }
     
     results = []
@@ -51,19 +58,17 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
                     nft_info = await get_nft_info(nft_id)
                     if nft_info and "current_address" in nft_info:
                         xch_address = nft_info["current_address"]
-                        did_address = nft_info.get("did_owner")  # Add DID check
                         
+                        # Skip excluded addresses
+                        if xch_address in EXCLUDED_ADDRESSES:
+                            print(f"Skipping excluded address: {xch_address}")
+                            continue
+                            
                         owner_info = {
                             "nft_id": nft_id,
-                            "xch_address": xch_address,
+                            "xch_address": xch_address
                         }
-                        
-                        if did_address:
-                            owner_info["did_owner"] = did_address
-                            print(f"Current owner: {xch_address} (DID: {did_address})")
-                        else:
-                            print(f"Current owner: {xch_address}")
-                            
+                        print(f"Current owner: {xch_address}")
                         results.append(owner_info)
                     else:
                         print(f"No owner information found for NFT")
