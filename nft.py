@@ -18,7 +18,7 @@ from chia.wallet.nft_wallet.uncurry_nft import UncurriedNFT
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash
 
 
-async def get_nft_info(nft_id: str) -> Dict:
+async def get_nft_info(nft_id: str, target_height: int) -> Dict:
     nft_info = {
         "nft_id": "",
         "current_address": "",
@@ -32,7 +32,7 @@ async def get_nft_info(nft_id: str) -> Dict:
         raise Exception(f"Failed to create RPC client: {e}")
 
     launcher_coin = decode_puzzle_hash(nft_id)
-    current_coin = await get_last_child(client, launcher_coin)
+    current_coin = await get_last_child(client, launcher_coin, target_height)
     coin_bytes = current_coin.name
 
     coin_record = await client.get_coin_record_by_name(coin_bytes)
@@ -51,14 +51,13 @@ async def get_nft_info(nft_id: str) -> Dict:
     (_, puzzlehash) = get_metadata_and_phs(uncurried_nft, puzz_solution.solution)
     current_address = encode_puzzle_hash(puzzlehash, "xch")
     nft_info["current_address"] = current_address
-    
-    print(json.dumps(nft_info))
+
     client.close()
-    return nft_info  
+    return nft_info
 
 
 # Gets the last child coin
-async def get_last_child(client: FullNodeRpcClient, coin_id: bytes32) -> Optional[CoinRecord]:
+async def get_last_child(client: FullNodeRpcClient, coin_id: bytes32, target_height: int) -> Optional[CoinRecord]:
     current_coin = await client.get_coin_record_by_name(coin_id)
 
     while True:
@@ -66,6 +65,9 @@ async def get_last_child(client: FullNodeRpcClient, coin_id: bytes32) -> Optiona
             return current_coin
 
         if current_coin.spent_block_index == 0:
+            return current_coin
+
+        if current_coin.spent_block_index > target_height:
             return current_coin
 
         conditions = await get_conditions_for_coin(client, current_coin)

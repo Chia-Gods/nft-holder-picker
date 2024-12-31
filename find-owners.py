@@ -1,5 +1,7 @@
 import asyncio
 import json
+import re
+
 import requests
 import time
 from typing import List, Dict, Optional
@@ -45,10 +47,10 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
             data = response.json()
 
             nfts = data.get("items", [])
-            current_batch = [nft["encoded_id"] for nft in nfts if "encoded_id" in nft]
 
             # Process each NFT in the current batch
-            for nft_id in current_batch:
+            for nft_record in nfts:
+                nft_id = nft_record["encoded_id"]
                 TOTAL_PROCESSED += 1
                 if nft_id in seen_nfts:
                     print(f"Already processed {nft_id}")
@@ -56,7 +58,7 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
 
                 print(f"\nProcessing NFT {TOTAL_PROCESSED}: {nft_id}")
                 try:
-                    nft_info = await get_nft_info(nft_id)
+                    nft_info = await get_nft_info(nft_id, target_height)
                     print(nft_info)
                     if isinstance(nft_info, str):
                         nft_info = json.loads(nft_info)
@@ -70,7 +72,8 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
 
                         owner_info = {
                             "nft_id": nft_id,
-                            "xch_address": xch_address
+                            "name": nft_record["name"],
+                            "xch_address": xch_address,
                         }
                         print(f"Current owner: {xch_address}")
                         results.append(owner_info)
@@ -120,6 +123,7 @@ async def main():
 
         print("\nFetching NFTs from collection...")
         results = await get_and_process_collection_nfts(collection_id, target_height)
+        results.sort(key=lambda x: int(re.search(r'\d+', x["name"]).group()), reverse=False)
 
         # Save results to file
         output_file = "nft_results.json"

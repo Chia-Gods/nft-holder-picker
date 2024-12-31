@@ -1,4 +1,5 @@
 EXCLUDED_ADDRESSES = [
+    "xch1wyg6z8n3ycvdcv9c8s3607tnsqyzdtu9ds7gh3jul8qpw8kw7sdsr0335k",
     "xch1n7celqxgn25f9rngfk0g67n299je52qr6pmtk26yeq2ehnm8ftkq9hmldp",
     "xch1xpc5gse38dfkfv07kkxhtcjsuqcj08l4t2ajfpemrk83sssfd2tsrjj9yw",
     "xch104v5ukxzd2s62e5pystdgjju8v4vq8g464ggyphemh2zeyysg0rqrrlev3",
