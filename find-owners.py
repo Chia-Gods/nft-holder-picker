@@ -20,49 +20,54 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
         target_height: Optional target block height
     """
     global TOTAL_PROCESSED
-    
+
     endpoint = f"{MINTGARDEN_API}/collections/{collection_id}/nfts"
     params = {
-        "size": 100  # Maximum allowed size
+        "size": 100,  # Maximum allowed size
     }
-    
-    results = []
+
     page = 1
-    
+    results = []
+    seen_nfts = []
+
     try:
-        while TOTAL_PROCESSED < 250: 
+        while TOTAL_PROCESSED < 250:
             print(f"\rFetching page {page}...", end="")
             response = requests.get(endpoint, params=params)
-            
+
             # Handle rate limiting with fixed 60-second delay
             if response.status_code == 429:
                 print("\nRate limited. Waiting 60 seconds...")
                 time.sleep(60)
                 continue
-                
+
             response.raise_for_status()
             data = response.json()
-            
+
             nfts = data.get("items", [])
             current_batch = [nft["encoded_id"] for nft in nfts if "encoded_id" in nft]
-            
+
             # Process each NFT in the current batch
             for nft_id in current_batch:
                 TOTAL_PROCESSED += 1
+                if nft_id in seen_nfts:
+                    print(f"Already processed {nft_id}")
+                seen_nfts.append(nft_id)
+
                 print(f"\nProcessing NFT {TOTAL_PROCESSED}: {nft_id}")
                 try:
                     nft_info = await get_nft_info(nft_id)
                     print(nft_info)
                     if isinstance(nft_info, str):
                         nft_info = json.loads(nft_info)
-                        
+
                     if nft_info and isinstance(nft_info, dict) and "current_address" in nft_info:
                         xch_address = nft_info["current_address"]
-                        
+
                         # Skip excluded addresses
                         if xch_address in EXCLUDED_ADDRESSES:
                             continue
-                            
+
                         owner_info = {
                             "nft_id": nft_id,
                             "xch_address": xch_address
@@ -81,25 +86,22 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
                         "nft_id": nft_id,
                         "error": str(e)
                     })
-                
-                # Rate limiting between NFT processing
-                time.sleep(RATE_LIMIT_DELAY)
-            
+
             # Check if there are more pages
             next_cursor = data.get("next")
             if not next_cursor or next_cursor == ">":
                 break
-                
+
             # Update params for next page
-            params["cursor"] = next_cursor
+            params["page"] = next_cursor
             page += 1
-            
+
             # Add delay between pages
-            time.sleep(1)
-            
+            time.sleep(RATE_LIMIT_DELAY)
+
         print(f"\nCompleted processing all NFTs: {TOTAL_PROCESSED} total")
         return results
-        
+
     except requests.exceptions.RequestException as e:
         raise Exception(f"Failed to fetch collection NFTs: {str(e)}")
 
@@ -118,7 +120,7 @@ async def main():
 
         print("\nFetching NFTs from collection...")
         results = await get_and_process_collection_nfts(collection_id, target_height)
-        
+
         # Save results to file
         output_file = "nft_results.json"
         with open(output_file, "w") as f:
