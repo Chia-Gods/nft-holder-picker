@@ -1,3 +1,11 @@
+# Exclude the 1 of 1's from being eligible to win
+EXCLUDED_NFTS = [
+    "nft1r8cx3ykw4r8x6wkaehd5ye26xfdhzlk7fswz8ctgvc5sj9al3scslv03v6",
+    "nft1wgw99erw6j7rrlt4zm2qme6uwgrrcgvcwwkvcnuv8kmctxpernxqzaud3a",
+    "nft13vkuzqllv6mppwj4t8xgtpvmsykextlnswxvwky9lu2x9vh8urkqfcak82",
+    "nft1z0snfa9e70epme2dy2j236n48r3qxrqz24ydr403nemd8kwv7w7swgfuh2",
+]
+
 EXCLUDED_ADDRESSES = [
     "xch1wyg6z8n3ycvdcv9c8s3607tnsqyzdtu9ds7gh3jul8qpw8kw7sdsr0335k",
     "xch1n7celqxgn25f9rngfk0g67n299je52qr6pmtk26yeq2ehnm8ftkq9hmldp",

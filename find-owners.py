@@ -1,5 +1,6 @@
 import asyncio
 import json
+import random
 import re
 import sys
 
@@ -10,7 +11,7 @@ from chia.rpc.full_node_rpc_client import FullNodeRpcClient
 from chia.util.config import load_config
 from chia.util.default_root import DEFAULT_ROOT_PATH
 from nft import get_nft_info
-from excluded_list import EXCLUDED_ADDRESSES
+from excluded_list import EXCLUDED_ADDRESSES, EXCLUDED_NFTS
 
 MINTGARDEN_API = "https://api.mintgarden.io"
 RATE_LIMIT_DELAY = 1  # seconds between API calls
@@ -58,6 +59,10 @@ async def get_and_process_collection_nfts(client: FullNodeRpcClient, collection_
                 if nft_id in seen_nfts:
                     print(f"Already processed {nft_id}")
                 seen_nfts.append(nft_id)
+
+                if nft_id in EXCLUDED_NFTS:
+                    print(f"{nft_id} is excluded")
+                    continue
 
                 print(f"\nProcessing NFT {TOTAL_PROCESSED}: {nft_id}")
                 try:
@@ -141,7 +146,17 @@ async def main():
 
         # Get the header hash of the cutoff block
         final_block = await client.get_block_record_by_height(target_height)
-        print(final_block.header_hash.hex())
+
+        # Convert bytes32 to an integer for the seed
+        int_seed = int.from_bytes(final_block.header_hash, 'big')
+
+        # Set the seed
+        random.seed(int_seed)
+
+        # Generate a random integer
+        random_integer = random.randint(0, len(results)-1)  # Random integer between 0 and length of results (minus one, since index starts at 0)
+        winner = results[random_integer]
+        print(winner)
 
         client.close()
 
