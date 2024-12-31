@@ -50,11 +50,21 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
                 try:
                     nft_info = await get_nft_info(nft_id)
                     if nft_info and "current_address" in nft_info:
-                        print(f"Current owner: {nft_info['current_address']}")
-                        results.append({
+                        xch_address = nft_info["current_address"]
+                        did_address = nft_info.get("did_owner")  # Add DID check
+                        
+                        owner_info = {
                             "nft_id": nft_id,
-                            "current_address": nft_info["current_address"]
-                        })
+                            "xch_address": xch_address,
+                        }
+                        
+                        if did_address:
+                            owner_info["did_owner"] = did_address
+                            print(f"Current owner: {xch_address} (DID: {did_address})")
+                        else:
+                            print(f"Current owner: {xch_address}")
+                            
+                        results.append(owner_info)
                     else:
                         print(f"No owner information found for NFT")
                         results.append({
