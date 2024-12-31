@@ -10,37 +10,56 @@ from chia.util.default_root import DEFAULT_ROOT_PATH
 MINTGARDEN_API = "https://api.mintgarden.io"
 RATE_LIMIT_DELAY = 1  # seconds between API calls
 
-def get_collection_nfts(collection_id: str) -> List[str]:
+async def get_and_process_collection_nfts(collection_id: str, target_height: Optional[int] = None):
     """
-    Fetch all NFTs from a collection using MintGarden API
+    Fetch and process NFTs from a collection using MintGarden API
     Args:
         collection_id: The collection ID from MintGarden
-    Returns:
-        List of NFT IDs
-    Raises:
-        Exception: If API call fails
+        target_height: Optional target block height
     """
     endpoint = f"{MINTGARDEN_API}/collections/{collection_id}/nfts"
-    all_nfts = []
     params = {
         "size": 100  # Maximum allowed size
     }
     
+    results = []
+    total_processed = 0
+    page = 1
+    
     try:
         while True:
+            print(f"\rFetching page {page}...", end="")
             response = requests.get(endpoint, params=params)
             
-            # Handle rate limiting
+            # Handle rate limiting with fixed 60-second delay
             if response.status_code == 429:
-                print("Rate limited. Waiting 60 seconds...")
-                time.sleep(10)
+                print("\nRate limited. Waiting 60 seconds...")
+                time.sleep(60)
                 continue
                 
             response.raise_for_status()
             data = response.json()
             
             nfts = data.get("items", [])
-            all_nfts.extend([nft["encoded_id"] for nft in nfts if "encoded_id" in nft])
+            current_batch = [nft["encoded_id"] for nft in nfts if "encoded_id" in nft]
+            
+            # Process each NFT in the current batch
+            for nft_id in current_batch:
+                total_processed += 1
+                print(f"\nProcessing NFT {total_processed}: {nft_id}")
+                try:
+                    nft_info = await get_nft_info(nft_id)
+                    if nft_info.get("error"):
+                        print(f"Error processing NFT: {nft_info['error']}")
+                    elif nft_info.get("current_address"):
+                        print(f"Current owner: {nft_info['current_address']}")
+                    results.append(nft_info)
+                except Exception as e:
+                    print(f"Failed to process NFT: {str(e)}")
+                    results.append({"nft_id": nft_id, "error": str(e)})
+                
+                # Rate limiting between NFT processing
+                time.sleep(RATE_LIMIT_DELAY)
             
             # Check if there are more pages
             next_cursor = data.get("next")
@@ -49,44 +68,16 @@ def get_collection_nfts(collection_id: str) -> List[str]:
                 
             # Update params for next page
             params["cursor"] = next_cursor
+            page += 1
             
-            # Add delay between requests to avoid rate limiting
-            time.sleep(1)  # 1 second delay between requests
+            # Add delay between pages
+            time.sleep(1)
             
-        return all_nfts
+        print(f"\nCompleted processing all NFTs: {total_processed} total")
+        return results
+        
     except requests.exceptions.RequestException as e:
         raise Exception(f"Failed to fetch collection NFTs: {str(e)}")
-
-async def process_nfts(nft_ids: List[str], target_height: Optional[int] = None) -> List[Dict]:
-    """
-    Process a list of NFTs and get their current owners
-    Args:
-        nft_ids: List of NFT IDs to process
-        target_height: Optional target block height
-    Returns:
-        List of dictionaries containing NFT information
-    """
-    results = []
-    total = len(nft_ids)
-    
-    for index, nft_id in enumerate(nft_ids, 1):
-        print(f"\nProcessing NFT {index}/{total}: {nft_id}")
-        try:
-            nft_info = await get_nft_info(nft_id)
-            if nft_info.get("error"):
-                print(f"Error processing NFT: {nft_info['error']}")
-            elif nft_info.get("current_address"):
-                print(f"Current owner: {nft_info['current_address']}")
-            results.append(nft_info)
-        except Exception as e:
-            print(f"Failed to process NFT: {str(e)}")
-            results.append({"nft_id": nft_id, "error": str(e)})
-        
-        # Rate limiting
-        if index < total:
-            time.sleep(RATE_LIMIT_DELAY)
-    
-    return results
 
 async def main():
     try:
@@ -102,15 +93,7 @@ async def main():
         target_height = int(target_height) if target_height.strip() else None
 
         print("\nFetching NFTs from collection...")
-        nft_ids = get_collection_nfts(collection_id)
-        
-        if not nft_ids:
-            print("No NFTs found in collection")
-            return
-            
-        print(f"Found {len(nft_ids)} NFTs in collection")
-        
-        results = await process_nfts(nft_ids, target_height)
+        results = await get_and_process_collection_nfts(collection_id, target_height)
         
         # Save results to file
         output_file = "nft_results.json"
