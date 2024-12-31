@@ -28,7 +28,7 @@ This tool:
    ```
    
 2. Create a local venv and install requirements:
-   ```
+   ```bash
    python3 -m venv venv
    . ./venv/bin/activate
    pip install -r requirements.txt
