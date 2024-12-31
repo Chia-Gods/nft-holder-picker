@@ -11,6 +11,7 @@ from excluded_list import EXCLUDED_ADDRESSES
 MINTGARDEN_API = "https://api.mintgarden.io"
 RATE_LIMIT_DELAY = 1  # seconds between API calls
 TOTAL_PROCESSED = 0
+
 async def get_and_process_collection_nfts(collection_id: str, target_height: Optional[int] = None):
     """
     Fetch and process NFTs from a collection using MintGarden API
@@ -18,6 +19,8 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
         collection_id: The collection ID from MintGarden
         target_height: Optional target block height
     """
+    global TOTAL_PROCESSED
+    
     endpoint = f"{MINTGARDEN_API}/collections/{collection_id}/nfts"
     params = {
         "size": 100  # Maximum allowed size
@@ -45,8 +48,8 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
             
             # Process each NFT in the current batch
             for nft_id in current_batch:
-                total_processed += 1
-                print(f"\nProcessing NFT {total_processed}: {nft_id}")
+                TOTAL_PROCESSED += 1
+                print(f"\nProcessing NFT {TOTAL_PROCESSED}: {nft_id}")
                 try:
                     nft_info = await get_nft_info(nft_id)
                     print(nft_info)
@@ -94,7 +97,7 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
             # Add delay between pages
             time.sleep(1)
             
-        print(f"\nCompleted processing all NFTs: {total_processed} total")
+        print(f"\nCompleted processing all NFTs: {TOTAL_PROCESSED} total")
         return results
         
     except requests.exceptions.RequestException as e:
