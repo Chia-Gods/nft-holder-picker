@@ -34,7 +34,7 @@ This tool:
    pip install -r requirements.txt
    ```
 
-4.Run the script with your collection ID and target height:
+3. Run the script with your collection ID and target height:
    ```bash
    python3 find-owners.py <collection_id> <target_height>
    ```
