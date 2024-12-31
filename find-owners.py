@@ -56,6 +56,9 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
                 print(f"\nProcessing NFT {total_processed}: {nft_id}")
                 try:
                     nft_info = await get_nft_info(nft_id)
+                    if isinstance(nft_info, str):
+                        nft_info = json.loads(nft_info)
+                        
                     if nft_info and isinstance(nft_info, dict) and "current_address" in nft_info:
                         xch_address = nft_info["current_address"]
                         
