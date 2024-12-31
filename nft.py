@@ -16,17 +16,21 @@ from chia.types.condition_opcodes import ConditionOpcode
 from chia.wallet.nft_wallet.nft_puzzles import get_metadata_and_phs
 from chia.wallet.nft_wallet.uncurry_nft import UncurriedNFT
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash
-from chia.wallet.coinset_client import CoinsetClient
 
-# Coinset.org API Base URL
-COINSET_BASE_URL = "https://api.coinset.org"
 # nft.py <nft_id>
 async def get_nft_info():
     nft_info = {
         "nft_id": "",
         "current_address": "",
     }
-    coinset_client = CoinsetClient()
+
+    config = load_config(DEFAULT_ROOT_PATH, "config.yaml")
+    try:
+        client = await FullNodeRpcClient.create(config["self_hostname"], config["full_node"]["rpc_port"],
+                                                DEFAULT_ROOT_PATH, config)
+    except Exception as e:
+        raise Exception(f"Failed to create RPC client: {e}")
+    
     nft_id = sys.argv[1]
     launcher_coin = decode_puzzle_hash(nft_id)
     current_coin = await get_last_child(client, launcher_coin)
