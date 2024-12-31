@@ -1,7 +1,7 @@
 import asyncio
 import json
 import sys
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 from chia.consensus.default_constants import DEFAULT_CONSTANTS
 from chia.rpc.full_node_rpc_client import FullNodeRpcClient
@@ -18,8 +18,7 @@ from chia.wallet.nft_wallet.uncurry_nft import UncurriedNFT
 from chia.util.bech32m import encode_puzzle_hash, decode_puzzle_hash
 
 
-# nft.py <nft_id>
-async def get_nft_info(nft_id: str):
+async def get_nft_info(nft_id: str) -> Dict:
     nft_info = {
         "nft_id": "",
         "current_address": "",
@@ -52,9 +51,10 @@ async def get_nft_info(nft_id: str):
     (_, puzzlehash) = get_metadata_and_phs(uncurried_nft, puzz_solution.solution)
     current_address = encode_puzzle_hash(puzzlehash, "xch")
     nft_info["current_address"] = current_address
-
+    
     print(json.dumps(nft_info))
     client.close()
+    return nft_info  
 
 
 # Gets the last child coin
