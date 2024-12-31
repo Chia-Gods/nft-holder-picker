@@ -21,12 +21,29 @@ def get_collection_nfts(collection_id: str) -> List[str]:
         Exception: If API call fails
     """
     endpoint = f"{MINTGARDEN_API}/collections/{collection_id}/nfts"
+    all_nfts = []
+    params = {
+        "size": 100  # Maximum allowed size
+    }
+    
     try:
-        response = requests.get(endpoint)
-        response.raise_for_status()
-        data = response.json()
-        nfts = data.get("items", [])
-        return [nft["encoded_id"] for nft in nfts if "encoded_id" in nft]
+        while True:
+            response = requests.get(endpoint, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            nfts = data.get("items", [])
+            all_nfts.extend([nft["encoded_id"] for nft in nfts if "encoded_id" in nft])
+            
+            # Check if there are more pages
+            next_cursor = data.get("next")
+            if not next_cursor or next_cursor == ">":
+                break
+                
+            # Update params for next page
+            params["cursor"] = next_cursor
+            
+        return all_nfts
     except requests.exceptions.RequestException as e:
         raise Exception(f"Failed to fetch collection NFTs: {str(e)}")
 
@@ -48,7 +65,7 @@ async def process_nfts(nft_ids: List[str], target_height: Optional[int] = None) 
             nft_info = await get_nft_info(nft_id)
             if nft_info.get("error"):
                 print(f"Error processing NFT: {nft_info['error']}")
-            else:
+            elif nft_info.get("current_address"):
                 print(f"Current owner: {nft_info['current_address']}")
             results.append(nft_info)
         except Exception as e:
