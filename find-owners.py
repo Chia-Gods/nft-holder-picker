@@ -10,7 +10,7 @@ from excluded_list import EXCLUDED_ADDRESSES
 
 MINTGARDEN_API = "https://api.mintgarden.io"
 RATE_LIMIT_DELAY = 1  # seconds between API calls
-
+TOTAL_PROCESSED = 0
 async def get_and_process_collection_nfts(collection_id: str, target_height: Optional[int] = None):
     """
     Fetch and process NFTs from a collection using MintGarden API
@@ -24,11 +24,10 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
     }
     
     results = []
-    total_processed = 0
     page = 1
     
     try:
-        while True:
+        while TOTAL_PROCESSED < 250: 
             print(f"\rFetching page {page}...", end="")
             response = requests.get(endpoint, params=params)
             
@@ -59,7 +58,6 @@ async def get_and_process_collection_nfts(collection_id: str, target_height: Opt
                         
                         # Skip excluded addresses
                         if xch_address in EXCLUDED_ADDRESSES:
-                            print(f"Skipping excluded address: {xch_address}")
                             continue
                             
                         owner_info = {
