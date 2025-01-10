@@ -133,6 +133,7 @@ async def main():
 
         collection_id = sys.argv[1]
         target_height = int(sys.argv[2])
+        num_of_winners = int(sys.argv[3])
 
         print(f"\nFetching NFTs from collection {collection_id} before height {target_height}...")
         results = await get_and_process_collection_nfts(client, collection_id, target_height)
@@ -149,14 +150,14 @@ async def main():
 
         # Convert bytes32 to an integer for the seed
         int_seed = int.from_bytes(final_block.header_hash, 'big')
+        for i in range(num_of_winners):
+            # Set the seed
+            random.seed(int_seed + i)
 
-        # Set the seed
-        random.seed(int_seed)
-
-        # Generate a random integer
-        random_integer = random.randint(0, len(results)-1)  # Random integer between 0 and length of results (minus one, since index starts at 0)
-        winner = results[random_integer]
-        print(winner)
+            # Generate a random integer
+            random_integer = random.randint(0, len(results)-1)  # Random integer between 0 and length of results (minus one, since index starts at 0)
+            winner = results.pop[random_integer]
+            print(f"Winner {i + 1}: {winner}")
 
         client.close()
 
