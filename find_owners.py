@@ -150,13 +150,12 @@ async def main():
 
         # Convert bytes32 to an integer for the seed
         int_seed = int.from_bytes(final_block.header_hash, 'big')
+        # Set the seed
+        random.seed(int_seed)
         for i in range(num_of_winners):
-            # Set the seed
-            random.seed(int_seed + i)
-
             # Generate a random integer
             random_integer = random.randint(0, len(results)-1)  # Random integer between 0 and length of results (minus one, since index starts at 0)
-            winner = results.pop[random_integer]
+            winner = results.pop(random_integer)
             print(f"Winner {i + 1}: {winner}")
 
         client.close()
